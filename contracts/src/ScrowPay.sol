@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 /**
- * @title EscrowOrder (Arbitrum, USDC nativo) - MVP sin UUPS
+ * @title EscrowPay 
  * @notice Custodia USDC de un comprador hasta confirmación (EIP-712) firmada por el oráculo;
  *         si no hay entrega a tiempo, el comprador puede pedir refund.
  * @dev    AccessControl + Pausable + ReentrancyGuard + EIP712 + SafeERC20.
