@@ -1,6 +1,6 @@
 "use client"
 import { useSmartAccountClient, useSendUserOperation } from "@account-kit/react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { encodeFunctionData } from "viem"
 
 interface OrderEvent {
@@ -29,7 +29,7 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchOrderEvents = async () => {
+  const fetchOrderEvents = useCallback(async () => {
     if (!client?.account.address) return
 
     setLoading(true)
@@ -140,13 +140,13 @@ export const Dashboard = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [client?.account.address])
 
   useEffect(() => {
     if (client?.account.address && !isLoadingClient) {
       fetchOrderEvents()
     }
-  }, [client?.account.address, isLoadingClient])
+  }, [client?.account.address, isLoadingClient, fetchOrderEvents])
 
   const getOrderStatus = (order: OrderData) => {
     if (order.released) return { status: 'Released', color: 'green' }
@@ -166,12 +166,12 @@ export const Dashboard = () => {
     return 'Unknown'
   }
 
-  const filteredOrders = Object.entries(orders).filter(([_, order]) => {
+  const filteredOrders = Object.entries(orders).filter(([orderId, order]) => {
     const userAddress = client?.account.address?.toLowerCase()
     const buyerAddress = order.created?.buyer?.toLowerCase()
     const merchantAddress = order.created?.merchant?.toLowerCase()
     const matches = order.created && (buyerAddress === userAddress || merchantAddress === userAddress)
-    console.log("Filtering order:", order, "matches:", matches)
+    console.log("Filtering order:", orderId, order, "matches:", matches)
     return matches
   })
   
@@ -406,7 +406,7 @@ export const Dashboard = () => {
                 <div className="space-y-4 max-h-96 overflow-y-auto">
                   {filteredOrders.map(([orderId, order]) => {
                     const status = getOrderStatus(order)
-                    const role = getUserRole(order, client?.account.address!)
+                    const role = getUserRole(order, client?.account.address || '')
                     const statusColors = {
                       green: 'bg-green-100 text-green-800 border-green-200',
                       yellow: 'bg-yellow-100 text-yellow-800 border-yellow-200',
