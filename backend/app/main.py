@@ -17,7 +17,7 @@ from utils.geo import calculate_distance_m, hash_gps
 from app.relayer import send_release_transaction
 
 # Create database tables on startup
-Base.metadata.create_all(bind=engine)
+#Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Escrow DApp Backend")
 
