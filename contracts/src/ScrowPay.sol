@@ -52,8 +52,8 @@ contract EscrowPay is AccessControl, Pausable, ReentrancyGuard, EIP712 {
         address merchant;
         uint256 amount; // Bruto depositado
         uint256 feeCharged; // Fee fijado al crear
-        uint64 createdAt;
         uint64 timeout;
+        uint64 createdAt;
         OrderStatus status;
     }
 
