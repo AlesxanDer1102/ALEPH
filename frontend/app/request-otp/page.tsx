@@ -72,7 +72,7 @@ export default function RequestOTPPage() {
                     value={orderId}
                     onChange={(e) => setOrderId(e.target.value)}
                     placeholder="0x..."
-                    className="w-full px-4 py-3 border border-[#3A71FC]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3A71FC] focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3A71FC] focus:border-[#3A71FC] bg-white text-gray-900 placeholder-gray-500"
                     required
                   />
                 </div>

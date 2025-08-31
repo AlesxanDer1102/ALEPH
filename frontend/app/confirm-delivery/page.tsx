@@ -106,7 +106,7 @@ export default function ConfirmDeliveryPage() {
                   value={formData.orderId}
                   onChange={handleInputChange}
                   placeholder="0x..."
-                  className="w-full px-4 py-3 border border-[#3A71FC]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3A71FC] focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3A71FC] focus:border-[#3A71FC] bg-white text-gray-900 placeholder-gray-500"
                   required
                 />
               </div>
@@ -123,7 +123,7 @@ export default function ConfirmDeliveryPage() {
                   value={formData.courierId}
                   onChange={handleInputChange}
                   placeholder="Enter your courier ID"
-                  className="w-full px-4 py-3 border border-[#3A71FC]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3A71FC] focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3A71FC] focus:border-[#3A71FC] bg-white text-gray-900 placeholder-gray-500"
                   required
                 />
               </div>
@@ -163,7 +163,7 @@ export default function ConfirmDeliveryPage() {
                     value={formData.otp}
                     onChange={handleInputChange}
                     placeholder="Enter 6-digit OTP"
-                    className="w-full px-4 py-3 border border-[#3A71FC]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3A71FC] focus:border-transparent font-mono text-lg"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3A71FC] focus:border-[#3A71FC] bg-white text-gray-900 placeholder-gray-500 font-mono text-lg"
                     maxLength={6}
                     required
                   />
@@ -183,7 +183,7 @@ export default function ConfirmDeliveryPage() {
                     value={formData.qrToken}
                     onChange={handleInputChange}
                     placeholder="Enter QR token from scanned code"
-                    className="w-full px-4 py-3 border border-[#3A71FC]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3A71FC] focus:border-transparent font-mono text-sm"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3A71FC] focus:border-[#3A71FC] bg-white text-gray-900 placeholder-gray-500 font-mono text-sm"
                     required
                   />
                   <p className="text-xs text-gray-600">
@@ -204,7 +204,7 @@ export default function ConfirmDeliveryPage() {
                   value={formData.photoUri}
                   onChange={handleInputChange}
                   placeholder="https://example.com/delivery-photo.jpg"
-                  className="w-full px-4 py-3 border border-[#3A71FC]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3A71FC] focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3A71FC] focus:border-[#3A71FC] bg-white text-gray-900 placeholder-gray-500"
                 />
                 <p className="text-xs text-gray-600">
                   Optional: URL to a photo of the delivered package
@@ -275,9 +275,14 @@ export default function ConfirmDeliveryPage() {
                           </div>
                           <div>
                             <p className="font-medium text-gray-700">Transaction Hash:</p>
-                            <p className="text-xs font-mono text-gray-600 break-all">
+                            <a 
+                              href={`https://sepolia.etherscan.io/tx/0x${deliveryConfirm.state.data.tx_hash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-mono text-blue-600 hover:text-blue-800 underline break-all"
+                            >
                               {deliveryConfirm.state.data.tx_hash}
-                            </p>
+                            </a>
                           </div>
                           <div>
                             <p className="font-medium text-gray-700">Auth Nonce:</p>

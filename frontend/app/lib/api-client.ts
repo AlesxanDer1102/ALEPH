@@ -79,13 +79,13 @@ class APIClient {
 
   /**
    * Get hardcoded GPS location for demo purposes
-   * Using coordinates near Times Square, NYC for consistent testing
+   * Using coordinates near Lima, Peru for consistent testing
    */
   async getCurrentLocation(): Promise<{ lat: number; lon: number; timestamp: number }> {
-    // Hardcoded coordinates for demo (Times Square area)
+    // Hardcoded coordinates for demo (Lima, Peru area)
     const DEMO_COORDINATES = {
-      lat: 40.7580, // Times Square latitude
-      lon: -73.9855, // Times Square longitude
+      lat: -12.0882, // Lima latitude (matches user example)
+      lon: -77.0504, // Lima longitude (matches user example)
       timestamp: Math.floor(Date.now() / 1000) // Current timestamp in seconds
     }
     
@@ -102,8 +102,8 @@ class APIClient {
   async getCourierLocation(): Promise<{ lat: number; lon: number; timestamp: number; accuracy: number }> {
     // Coordinates in Lima, Peru - very close to the buyer location (within ~50 meters)
     const COURIER_COORDINATES = {
-      lat: 40.7590, // Slightly different latitude (~20 meters south)
-      lon: -73.9875, // Slightly different longitude (~15 meters west)
+      lat: -12.0884, // Slightly different latitude (~20 meters south)
+      lon: -77.0506, // Slightly different longitude (~15 meters west) 
       timestamp: Math.floor(Date.now() / 1000),
       accuracy: 5 // GPS accuracy in meters (good accuracy for demo)
     }
