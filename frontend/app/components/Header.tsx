@@ -5,6 +5,7 @@ import {
   useSignerStatus,
   useUser,
 } from "@account-kit/react"
+import Link from "next/link"
 
 export const Header = () => {
   const user = useUser()
@@ -21,18 +22,18 @@ export const Header = () => {
               ALEPH
             </div>
             <nav className="hidden md:flex space-x-6">
-              <a href="/" className="text-gray-700 hover:text-[#3A71FC] font-medium transition-colors">
+              <Link href="/" className="text-gray-700 hover:text-[#3A71FC] font-medium transition-colors">
                 Dashboard
-              </a>
-              <a href="/create-order" className="text-gray-700 hover:text-[#3A71FC] font-medium transition-colors">
+              </Link>
+              <Link href="/create-order" className="text-gray-700 hover:text-[#3A71FC] font-medium transition-colors">
                 Create Order
-              </a>
-              <a href="/refund" className="text-gray-700 hover:text-[#3A71FC] font-medium transition-colors">
+              </Link>
+              <Link href="/refund" className="text-gray-700 hover:text-[#3A71FC] font-medium transition-colors">
                 Refund
-              </a>
-              <a href="/withdraw" className="text-gray-700 hover:text-[#3A71FC] font-medium transition-colors">
+              </Link>
+              <Link href="/withdraw" className="text-gray-700 hover:text-[#3A71FC] font-medium transition-colors">
                 Withdraw
-              </a>
+              </Link>
             </nav>
           </div>
           
