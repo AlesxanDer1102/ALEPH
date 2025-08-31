@@ -86,10 +86,19 @@ export default function ConfirmDeliveryPage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="bg-gradient-to-r from-[#1C9EEF] to-[#3A71FC] px-6 py-4">
-            <h1 className="text-2xl font-bold text-white">Confirm Delivery</h1>
-            <p className="text-white/90 text-sm mt-1">
-              As a courier, confirm successful delivery using OTP or QR code
-            </p>
+            <div className="flex items-center space-x-3">
+              <div className="bg-white/20 rounded-lg p-2">
+                <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">VeriPay Delivery Confirmation</h1>
+                <p className="text-white/90 text-sm mt-1">
+                  Secure delivery verification with OTP or QR authentication
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="p-6 space-y-6">

@@ -52,10 +52,19 @@ export default function RequestOTPPage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="bg-gradient-to-r from-[#3A71FC] to-[#1C9EEF] px-6 py-4">
-            <h1 className="text-2xl font-bold text-white">Request OTP for Delivery</h1>
-            <p className="text-white/90 text-sm mt-1">
-              As a buyer, request an OTP or QR code for delivery confirmation
-            </p>
+            <div className="flex items-center space-x-3">
+              <div className="bg-white/20 rounded-lg p-2">
+                <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">VeriPay Security Code</h1>
+                <p className="text-white/90 text-sm mt-1">
+                  Generate secure OTP or QR codes for delivery verification
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="p-6 space-y-6">

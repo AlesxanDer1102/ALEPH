@@ -18,8 +18,13 @@ export const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
-            <div className="text-2xl font-bold text-[#3A71FC] tracking-tight">
-              ALEPH
+            <div className="flex items-center space-x-2">
+              <div className="bg-gradient-to-r from-[#3A71FC] to-[#1C9EEF] text-white px-3 py-1 rounded-lg shadow-md">
+                <span className="text-xl font-bold tracking-tight">VeriPay</span>
+              </div>
+              <div className="text-xs text-gray-500 font-medium">
+                Secure Delivery Escrow
+              </div>
             </div>
             <nav className="hidden md:flex space-x-6">
               <Link href="/" className="text-gray-700 hover:text-[#3A71FC] font-medium transition-colors">
