@@ -1,6 +1,6 @@
 "use client"
 import { useSmartAccountClient, useSendUserOperation } from "@account-kit/react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { encodeFunctionData } from "viem"
 
 interface OrderEvent {
@@ -29,7 +29,7 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchOrderEvents = useCallback(async () => {
+  const fetchOrderEvents = async () => {
     if (!client?.account.address) return
 
     setLoading(true)
@@ -105,7 +105,7 @@ export const Dashboard = () => {
         const userAddress = client?.account.address?.toLowerCase()
         const buyerAddress = event.buyer?.toLowerCase()
         const merchantAddress = event.merchant?.toLowerCase()
-        
+
         if (buyerAddress === userAddress || merchantAddress === userAddress) {
           console.log("Order matches user:", event.orderId)
           if (!orderMap[event.orderId]) {
@@ -140,13 +140,13 @@ export const Dashboard = () => {
     } finally {
       setLoading(false)
     }
-  }, [client?.account.address])
+  }
 
   useEffect(() => {
     if (client?.account.address && !isLoadingClient) {
       fetchOrderEvents()
     }
-  }, [client?.account.address, isLoadingClient, fetchOrderEvents])
+  }, [client?.account.address, isLoadingClient])
 
   const getOrderStatus = (order: OrderData) => {
     if (order.released) return { status: 'Released', color: 'green' }
@@ -160,21 +160,21 @@ export const Dashboard = () => {
     const userAddr = userAddress?.toLowerCase()
     const buyerAddr = order.created?.buyer?.toLowerCase()
     const merchantAddr = order.created?.merchant?.toLowerCase()
-    
+
     if (buyerAddr === userAddr) return 'Buyer'
     if (merchantAddr === userAddr) return 'Merchant'
     return 'Unknown'
   }
 
-  const filteredOrders = Object.entries(orders).filter(([orderId, order]) => {
+  const filteredOrders = Object.entries(orders).filter(([_, order]) => {
     const userAddress = client?.account.address?.toLowerCase()
     const buyerAddress = order.created?.buyer?.toLowerCase()
     const merchantAddress = order.created?.merchant?.toLowerCase()
     const matches = order.created && (buyerAddress === userAddress || merchantAddress === userAddress)
-    console.log("Filtering order:", orderId, order, "matches:", matches)
+    console.log("Filtering order:", order, "matches:", matches)
     return matches
   })
-  
+
   console.log("Filtered orders:", filteredOrders)
 
   const { sendUserOperation: sendFaucetOperation, isSendingUserOperation: isSendingFaucet } = useSendUserOperation({
@@ -194,7 +194,8 @@ export const Dashboard = () => {
     if (!client) return
 
     const USDC_CONTRACT = '0x613cd54CF57424Db3e4D66B108d847D26E6630C0'
-    
+
+
     const data = encodeFunctionData({
       abi: [
         {
@@ -208,9 +209,7 @@ export const Dashboard = () => {
       functionName: 'faucet',
       args: []
     })
-    
-    console.log('Faucet data:', data)
-    
+
     sendFaucetOperation({
       uo: {
         target: USDC_CONTRACT,
@@ -368,6 +367,7 @@ export const Dashboard = () => {
               </div>
             </div>
 
+
             {/* Orders Section */}
             <div className="bg-white rounded-xl p-6 border-2 border-[#1C9EEF]/20 shadow-lg lg:col-span-2 xl:col-span-3">
               <div className="flex items-center justify-between mb-4">
@@ -406,7 +406,7 @@ export const Dashboard = () => {
                 <div className="space-y-4 max-h-96 overflow-y-auto">
                   {filteredOrders.map(([orderId, order]) => {
                     const status = getOrderStatus(order)
-                    const role = getUserRole(order, client?.account.address || '')
+                    const role = getUserRole(order, client?.account.address!)
                     const statusColors = {
                       green: 'bg-green-100 text-green-800 border-green-200',
                       yellow: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -455,7 +455,7 @@ export const Dashboard = () => {
                             <div className="mt-2 text-xs text-gray-500">
                               <span className="font-medium">TX:</span>
                               {(order.released?.txHash || order.created?.txHash) ? (
-                                <a 
+                                <a
                                   href={`https://sepolia.etherscan.io/tx/${order.released?.txHash || order.created?.txHash}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
