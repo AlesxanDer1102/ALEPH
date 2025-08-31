@@ -172,10 +172,13 @@ def confirm_delivery(req: schemas.DeliveryConfirmationRequest, db: Session = Dep
     # Se realiza la firma para confirmar la compra
     try:
         # Esta es la firma!
+        # Convertir amount de decimal a base units (USDC tiene 6 decimales)
+        amount_base_units = int(float(order.amount) * 10**6)
+        
         auth_dict, signature = sign_release_auth(
             order_id_hex=req.order_id,
             merchant_addr='0x' + order.merchant_address.hex(),
-            amount_base_units=int(order.amount)
+            amount_base_units=amount_base_units
         )
 
         tx_hash = send_release_transaction(req.order_id, auth_dict, signature)
