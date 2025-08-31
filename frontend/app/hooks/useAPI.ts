@@ -66,7 +66,7 @@ export function useConfirmDelivery(): APIHook<DeliveryConfirmationResponse, Deli
   return useAPICall(apiClient.confirmDelivery.bind(apiClient))
 }
 
-// Hook for getting current location
+// Hook for getting current location (buyer/user)
 export function useCurrentLocation() {
   const [state, setState] = useState<APIState<{ lat: number; lon: number; timestamp: number }>>({
     data: null,
@@ -95,6 +95,39 @@ export function useCurrentLocation() {
   return {
     state,
     getCurrentLocation,
+    reset
+  }
+}
+
+// Hook for getting courier location
+export function useCourierLocation() {
+  const [state, setState] = useState<APIState<{ lat: number; lon: number; timestamp: number }>>({
+    data: null,
+    loading: false,
+    error: null
+  })
+
+  const getCourierLocation = useCallback(async () => {
+    setState(prev => ({ ...prev, loading: true, error: null }))
+    
+    try {
+      const location = await apiClient.getCourierLocation()
+      setState({ data: location, loading: false, error: null })
+      return location
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get courier location'
+      setState({ data: null, loading: false, error: errorMessage })
+      return null
+    }
+  }, [])
+
+  const reset = useCallback(() => {
+    setState({ data: null, loading: false, error: null })
+  }, [])
+
+  return {
+    state,
+    getCourierLocation,
     reset
   }
 }

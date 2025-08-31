@@ -78,33 +78,39 @@ class APIClient {
   }
 
   /**
-   * Get current GPS location (browser API wrapper)
+   * Get hardcoded GPS location for demo purposes
+   * Using coordinates near Times Square, NYC for consistent testing
    */
   async getCurrentLocation(): Promise<{ lat: number; lon: number; timestamp: number }> {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported by this browser'))
-        return
-      }
+    // Hardcoded coordinates for demo (Times Square area)
+    const DEMO_COORDINATES = {
+      lat: 40.7580, // Times Square latitude
+      lon: -73.9855, // Times Square longitude
+      timestamp: Math.floor(Date.now() / 1000) // Current timestamp in seconds
+    }
+    
+    // Simulate a small delay like a real GPS call
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    return Promise.resolve(DEMO_COORDINATES)
+  }
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            lat: position.coords.latitude,
-            lon: position.coords.longitude,
-            timestamp: Math.floor(position.timestamp / 1000) // Convert to seconds
-          })
-        },
-        (error) => {
-          reject(new Error(`Geolocation error: ${error.message}`))
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 60000
-        }
-      )
-    })
+  /**
+   * Get slightly different location for courier (for demo purposes)
+   * This simulates a courier very close to the delivery location
+   */
+  async getCourierLocation(): Promise<{ lat: number; lon: number; timestamp: number }> {
+    // Coordinates very close to the buyer location (within ~50 meters)
+    const COURIER_COORDINATES = {
+      lat: 40.7582, // Slightly different latitude (~20 meters north)
+      lon: -73.9857, // Slightly different longitude (~15 meters west)
+      timestamp: Math.floor(Date.now() / 1000)
+    }
+    
+    // Simulate GPS delay
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    return Promise.resolve(COURIER_COORDINATES)
   }
 
   /**
@@ -116,7 +122,7 @@ class APIClient {
     
     if (!deviceId) {
       // Generate new device ID
-      deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
       localStorage.setItem('escrow_device_id', deviceId)
     }
     

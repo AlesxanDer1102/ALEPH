@@ -28,6 +28,12 @@ export const Header = () => {
               <Link href="/create-order" className="text-gray-700 hover:text-[#3A71FC] font-medium transition-colors">
                 Create Order
               </Link>
+              <Link href="/request-otp" className="text-gray-700 hover:text-[#3A71FC] font-medium transition-colors">
+                Request OTP
+              </Link>
+              <Link href="/confirm-delivery" className="text-gray-700 hover:text-[#3A71FC] font-medium transition-colors">
+                Confirm Delivery
+              </Link>
               <Link href="/refund" className="text-gray-700 hover:text-[#3A71FC] font-medium transition-colors">
                 Refund
               </Link>

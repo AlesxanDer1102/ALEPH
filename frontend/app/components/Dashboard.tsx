@@ -368,6 +368,65 @@ export const Dashboard = () => {
             </div>
 
 
+            {/* Quick Actions */}
+            <div className="bg-white rounded-xl p-6 border-2 border-purple-200 shadow-lg lg:col-span-2 xl:col-span-3">
+              <div className="flex items-center mb-4">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mr-3">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-purple-600">Quick Actions</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a
+                  href="/request-otp"
+                  className="p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-bold text-sm">OTP</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-blue-800">Request OTP</h4>
+                      <p className="text-xs text-blue-600">For buyers to generate delivery codes</p>
+                    </div>
+                  </div>
+                </a>
+
+                <a
+                  href="/confirm-delivery"
+                  className="p-4 border-2 border-green-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-600 text-lg">🚚</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-green-800">Confirm Delivery</h4>
+                      <p className="text-xs text-green-600">For couriers to complete deliveries</p>
+                    </div>
+                  </div>
+                </a>
+
+                <a
+                  href="/create-order"
+                  className="p-4 border-2 border-orange-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                      <span className="text-orange-600 text-lg">📦</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-orange-800">Create Order</h4>
+                      <p className="text-xs text-orange-600">Start a new escrow transaction</p>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+
             {/* Orders Section */}
             <div className="bg-white rounded-xl p-6 border-2 border-[#1C9EEF]/20 shadow-lg lg:col-span-2 xl:col-span-3">
               <div className="flex items-center justify-between mb-4">

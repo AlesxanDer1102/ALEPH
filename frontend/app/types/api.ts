@@ -9,11 +9,12 @@ export interface GPSLocation {
 // POST /orders
 export interface OrderCreate {
   order_id: string
-  buyer_address?: string
-  merchant_address?: string
-  amount?: string
-  destination_lat?: number
-  destination_lon?: number
+  merchant_address: string
+  buyer_address: string
+  amount: string
+  timeout: number
+  destination_lat: number
+  destination_lon: number
 }
 
 export interface OrderResponse {

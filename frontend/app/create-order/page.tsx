@@ -3,6 +3,7 @@ import React, { useState } from "react"
 import { useSmartAccountClient, useSendUserOperation } from "@account-kit/react"
 import { Header } from "../components/Header"
 import { encodeFunctionData } from "viem"
+import { useRegisterOrder, useCurrentLocation } from "../hooks/useAPI"
 
 interface OrderParams {
   buyer: string
@@ -80,12 +81,38 @@ export default function CreateOrderPage() {
   const [isApproved, setIsApproved] = useState(false)
   const [usdcBalance, setUsdcBalance] = useState<string>("")
 
+  // Backend registration hooks
+  const registerOrder = useRegisterOrder()
+  const location = useCurrentLocation()
+
   const { sendUserOperation, isSendingUserOperation } = useSendUserOperation({
     client,
     waitForTxn: true,
-    onSuccess: ({ hash }) => {
+    onSuccess: async ({ hash }) => {
       console.log("Transaction successful:", hash)
+      
+      // Register order in backend
+      try {
+        const gpsLocation = await location.getCurrentLocation()
+        const orderData = {
+          order_id: formData.orderId,
+          merchant_address: formData.merchant,
+          buyer_address: formData.buyer,
+          amount: formData.amount,
+          timeout: parseInt(formData.timeout) || 0,
+          destination_lat: gpsLocation?.lat || 40.7580, // Times Square lat (hardcoded demo)
+          destination_lon: gpsLocation?.lon || -73.9855  // Times Square lon (hardcoded demo)
+        }
+        console.log("Sending order data to backend:", orderData)
+        await registerOrder.execute(orderData)
+        console.log("Order registered in backend successfully")
+      } catch (error) {
+        console.error("Failed to register order in backend:", error)
+        // Don't block the UI success, just log the error
+      }
+
       setSuccess(`Order created successfully! Transaction: ${hash}`)
+      
       // Reset form
       setFormData({
         buyer: client?.account?.address || address || "",

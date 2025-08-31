@@ -1,6 +1,6 @@
 "use client"
 import { useState } from 'react'
-import { useRequestOTP, useConfirmDelivery, useCurrentLocation, useDeviceId } from '../hooks/useAPI'
+import { useRequestOTP, useConfirmDelivery, useCurrentLocation, useCourierLocation, useDeviceId } from '../hooks/useAPI'
 
 export const DeliveryOTP = () => {
   const [orderId, setOrderId] = useState('')
@@ -12,6 +12,7 @@ export const DeliveryOTP = () => {
   const otpRequest = useRequestOTP()
   const deliveryConfirm = useConfirmDelivery()
   const location = useCurrentLocation()
+  const courierLocation = useCourierLocation()
   const deviceId = useDeviceId()
 
   const handleRequestOTP = async () => {
@@ -30,9 +31,9 @@ export const DeliveryOTP = () => {
   }
 
   const handleConfirmDelivery = async () => {
-    const gpsLocation = await location.getCurrentLocation()
+    const gpsLocation = await courierLocation.getCourierLocation()
     if (!gpsLocation) {
-      alert('Failed to get GPS location')
+      alert('Failed to get courier GPS location')
       return
     }
 
@@ -157,15 +158,30 @@ export const DeliveryOTP = () => {
       )}
 
       {/* Device ID and Location Info */}
-      <div className="bg-gray-100 rounded-lg p-4 text-sm">
+      <div className="bg-gray-100 rounded-lg p-4 text-sm space-y-3">
         <p><strong>Device ID:</strong> {deviceId}</p>
+        
         {location.state.data && (
-          <div>
-            <p><strong>Current Location:</strong></p>
+          <div className="border-l-4 border-blue-400 pl-3">
+            <p><strong>Buyer Location (Hardcoded for Demo):</strong></p>
+            <p>📍 Times Square, NYC</p>
             <p>Lat: {location.state.data.lat}, Lon: {location.state.data.lon}</p>
             <p>Timestamp: {new Date(location.state.data.timestamp * 1000).toLocaleString()}</p>
           </div>
         )}
+
+        {courierLocation.state.data && (
+          <div className="border-l-4 border-green-400 pl-3">
+            <p><strong>Courier Location (Hardcoded for Demo):</strong></p>
+            <p>🚚 ~50m from delivery point</p>
+            <p>Lat: {courierLocation.state.data.lat}, Lon: {courierLocation.state.data.lon}</p>
+            <p>Timestamp: {new Date(courierLocation.state.data.timestamp * 1000).toLocaleString()}</p>
+          </div>
+        )}
+
+        <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs">
+          <p><strong>📍 Demo Mode:</strong> Both locations are hardcoded to be very close to each other (~50 meters apart) to simulate a successful delivery within the geofence radius.</p>
+        </div>
       </div>
     </div>
   )
