@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import time
@@ -20,6 +21,20 @@ from app.relayer import send_release_transaction
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Escrow DApp Backend")
+
+# Configure CORS for frontend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000", 
+        "http://localhost:3001",
+        "http://127.0.0.1:3001"
+    ],  # Frontend URLs (Next.js default ports)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 # Endpoint para que el frontend registre un pedido
 @app.post("/orders", response_model=schemas.OrderResponse, status_code=201)
@@ -63,46 +78,66 @@ def request_otp(req: schemas.OtpRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail=f"Buyer is outside the allowed delivery area ({int(distance)}m > {settings.GEOFENCE_RADIUS_M}m)")
 
     # CREACION DEL OTP
-    try:
-        # Pasar la orden a estado "Revoke" a todas las sesiones OTP activas
-        crud.revoke_existing_otp_sessions(db, order_id=order_id_bytes)
-        
-        otp, qr_token = None, None
-        otp_hash, qr_hash = None, None
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            # Pasar la orden a estado "Revoke" a todas las sesiones OTP activas
+            crud.revoke_existing_otp_sessions(db, order_id=order_id_bytes)
+            
+            otp, qr_token = None, None
+            otp_hash, qr_hash = None, None
 
-        # Generamos el hash para OTP y QR
-        if req.mode in ["otp", "both"]:
-            otp = generate_otp()
-            otp_hash = hash_otp(order_id_bytes, otp, settings.OTP_PEPPER)
-        
-        if req.mode in ["qr", "both"]:
-            qr_token = generate_qr_token()
-            qr_hash = hash_qr_token(qr_token, settings.QR_PEPPER)
+            # Generamos el hash para OTP y QR
+            if req.mode in ["otp", "both"]:
+                otp = generate_otp()
+                otp_hash = hash_otp(order_id_bytes, otp, settings.OTP_PEPPER)
+            
+            if req.mode in ["qr", "both"]:
+                qr_token = generate_qr_token()
+                qr_hash = hash_qr_token(qr_token, settings.QR_PEPPER)
 
-        # Generamos el hash GPS del comprador
-        gps_buyer_hash = hash_gps(req.gps_buyer.lat, req.gps_buyer.lon, req.gps_buyer.timestamp, "buyer_pepper")
-        
-        # marcamos el order con estado activa y además otorgamaos los hashes de otp, qr y gps! 
-        session = crud.create_otp_session(
-            db, order.id, order.buyer_address, otp_hash, qr_hash, gps_buyer_hash, req.device_id
-        )
+            # Generamos el hash GPS del comprador
+            gps_buyer_hash = hash_gps(req.gps_buyer.lat, req.gps_buyer.lon, req.gps_buyer.timestamp, "buyer_pepper")
+            
+            # marcamos el order con estado activa y además otorgamaos los hashes de otp, qr y gps! 
+            session = crud.create_otp_session(
+                db, order.id, order.buyer_address, otp_hash, qr_hash, gps_buyer_hash, req.device_id, auto_commit=False
+            )
+            
+            # Only commit if everything is successful
+            db.commit()
+            db.refresh(session)
 
-        qr_payload = None
-        if qr_token:
-            payload_str = f'{{"orderId":"{req.order_id}","token":"{qr_token}"}}'
-            qr_payload = base64.b64encode(payload_str.encode()).decode()
+            qr_payload = None
+            if qr_token:
+                payload_str = f'{{"orderId":"{req.order_id}","token":"{qr_token}"}}'
+                qr_payload = base64.b64encode(payload_str.encode()).decode()
 
-        return {
-            "otp": otp,
-            "qr_payload": qr_payload,
-            "expires_at": int(session.expires_at.timestamp())
-        }
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Could not create OTP session due to a database conflict. Please try again.")
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+            return {
+                "otp": otp,
+                "qr_payload": qr_payload,
+                "expires_at": int(session.expires_at.timestamp())
+            }
+            
+        except IntegrityError as ie:
+            db.rollback()
+            if attempt < max_retries - 1:
+                # If not the last attempt, try again after a short delay
+                import time
+                time.sleep(0.1)  # 100ms delay before retry
+                continue
+            else:
+                # Last attempt failed, raise a more helpful error
+                raise HTTPException(
+                    status_code=500, 
+                    detail="Could not create OTP session after multiple attempts. Previous session may still be active. Please wait a moment and try again."
+                )
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+            
+    # This should never be reached, but just in case
+    raise HTTPException(status_code=500, detail="Maximum retry attempts reached")
 
 @app.post("/deliveries/confirm", response_model=schemas.DeliveryConfirmationResponse)
 def confirm_delivery(req: schemas.DeliveryConfirmationRequest, db: Session = Depends(get_db)):
@@ -137,10 +172,13 @@ def confirm_delivery(req: schemas.DeliveryConfirmationRequest, db: Session = Dep
     # Se realiza la firma para confirmar la compra
     try:
         # Esta es la firma!
+        # Convertir amount de decimal a base units (USDC tiene 6 decimales)
+        amount_base_units = int(float(order.amount) * 10**6)
+        
         auth_dict, signature = sign_release_auth(
             order_id_hex=req.order_id,
             merchant_addr='0x' + order.merchant_address.hex(),
-            amount_base_units=int(order.amount)
+            amount_base_units=amount_base_units
         )
 
         tx_hash = send_release_transaction(req.order_id, auth_dict, signature)
