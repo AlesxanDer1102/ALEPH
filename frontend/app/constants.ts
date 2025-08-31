@@ -1,3 +1,7 @@
+import { Abi, Address } from "viem"
+
+export const ESCROW_CONTRACT_ADDRESS = "0xBfb13d12798bD5Be9169Db0a986BbDCaed2700B5" as Address
+
 export const scrowPayAbi = [
     {
         "type": "constructor",
@@ -199,8 +203,8 @@ export const scrowPayAbi = [
             { "name": "merchant", "type": "address", "internalType": "address" },
             { "name": "amount", "type": "uint256", "internalType": "uint256" },
             { "name": "feeCharged", "type": "uint256", "internalType": "uint256" },
-            { "name": "createdAt", "type": "uint64", "internalType": "uint64" },
             { "name": "timeout", "type": "uint64", "internalType": "uint64" },
+            { "name": "createdAt", "type": "uint64", "internalType": "uint64" },
             {
                 "name": "status",
                 "type": "uint8",
@@ -733,4 +737,4 @@ export const scrowPayAbi = [
         "inputs": [{ "name": "str", "type": "string", "internalType": "string" }]
     },
     { "type": "error", "name": "WithdrawNothingToClaim", "inputs": [] }
-]
+] as Abi
