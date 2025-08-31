@@ -101,7 +101,7 @@ export function useCurrentLocation() {
 
 // Hook for getting courier location
 export function useCourierLocation() {
-  const [state, setState] = useState<APIState<{ lat: number; lon: number; timestamp: number }>>({
+  const [state, setState] = useState<APIState<{ lat: number; lon: number; timestamp: number; accuracy: number }>>({
     data: null,
     loading: false,
     error: null

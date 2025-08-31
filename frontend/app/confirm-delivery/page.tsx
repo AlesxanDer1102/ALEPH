@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { Header } from "../components/Header"
 import { useConfirmDelivery, useCourierLocation } from '../hooks/useAPI'
+import { DeliveryConfirmationRequest } from '../types/api'
 
 export default function ConfirmDeliveryPage() {
   const [formData, setFormData] = useState({
@@ -9,7 +10,7 @@ export default function ConfirmDeliveryPage() {
     otp: '',
     qrToken: '',
     courierId: '',
-    photoUri: ''
+    photoUri: 'https://example.com/delivery-photo.jpg'
   })
   const [confirmationType, setConfirmationType] = useState<'otp' | 'qr'>('otp')
 
@@ -27,7 +28,7 @@ export default function ConfirmDeliveryPage() {
 
   const handleConfirmDelivery = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.orderId.trim() || !formData.courierId.trim()) {
       alert('Please fill in all required fields')
       return
@@ -56,13 +57,15 @@ export default function ConfirmDeliveryPage() {
     }
 
     // Prepare request data
-    const requestData = {
+    const requestData: DeliveryConfirmationRequest = {
       order_id: formData.orderId,
       courier_id: formData.courierId,
       gps_courier: gpsLocation,
-      ...(confirmationType === 'otp' ? { otp: formData.otp } : { qr_token: formData.qrToken }),
-      ...(formData.photoUri && { photo_uri: formData.photoUri })
+      qr_token: '',
+      otp: formData.otp,
+      photo_uri: formData.photoUri
     }
+    console.log('Submitting delivery confirmation:', requestData)
 
     await deliveryConfirm.execute(requestData)
   }
@@ -216,6 +219,9 @@ export default function ConfirmDeliveryPage() {
                   <p className="text-blue-600">
                     Lat: {courierLocation.state.data.lat}, Lon: {courierLocation.state.data.lon}
                   </p>
+                  <p className="text-blue-600">
+                    Accuracy: {courierLocation.state.data.accuracy}m
+                  </p>
                 </div>
               )}
 
@@ -259,7 +265,7 @@ export default function ConfirmDeliveryPage() {
                   </div>
                   <div className="ml-3 flex-1">
                     <h3 className="text-lg font-medium text-green-800">🎉 Delivery Confirmed Successfully!</h3>
-                    
+
                     <div className="mt-4 space-y-3">
                       <div className="p-4 bg-white border border-green-300 rounded-lg">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">

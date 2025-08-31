@@ -4,6 +4,7 @@ export interface GPSLocation {
   lat: number
   lon: number
   timestamp: number
+  accuracy?: number  // Optional accuracy field for courier GPS
 }
 
 // POST /orders
@@ -39,11 +40,11 @@ export interface OtpResponse {
 // POST /deliveries/confirm
 export interface DeliveryConfirmationRequest {
   order_id: string
-  otp?: string
-  qr_token?: string
+  otp: string
+  qr_token: string
   courier_id: string
   gps_courier: GPSLocation
-  photo_uri?: string
+  photo_uri: string
 }
 
 export interface DeliveryConfirmationResponse {

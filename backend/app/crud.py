@@ -39,7 +39,7 @@ def revoke_existing_otp_sessions(db: Session, order_id: bytes):
     # Commit is handled in the calling function to ensure atomicity
     # db.commit()
 
-def create_otp_session(db: Session, order_id: bytes, buyer_address: bytes, otp_hash: bytes, qr_hash: bytes, gps_hash: bytes, device_id: str):
+def create_otp_session(db: Session, order_id: bytes, buyer_address: bytes, otp_hash: bytes, qr_hash: bytes, gps_hash: bytes, device_id: str, auto_commit: bool = False):
     expires_at = datetime.utcnow() + timedelta(seconds=settings.OTP_TTL_SECONDS)
     db_session = models.OtpSession(
         order_id=order_id,
@@ -52,8 +52,9 @@ def create_otp_session(db: Session, order_id: bytes, buyer_address: bytes, otp_h
         max_attempts=settings.MAX_OTP_ATTEMPTS
     )
     db.add(db_session)
-    db.commit()
-    db.refresh(db_session)
+    if auto_commit:
+        db.commit()
+        db.refresh(db_session)
     return db_session
 
 def use_otp_session(db: Session, otp_session_id: uuid.UUID):
@@ -61,9 +62,10 @@ def use_otp_session(db: Session, otp_session_id: uuid.UUID):
     db.commit()
 
 # --- Delivery ---
-def create_delivery_record(db: Session, delivery_data: dict):
+def create_delivery_record(db: Session, delivery_data: dict, auto_commit: bool = True):
     db_delivery = models.Delivery(**delivery_data)
     db.add(db_delivery)
-    db.commit()
-    db.refresh(db_delivery)
+    if auto_commit:
+        db.commit()
+        db.refresh(db_delivery)
     return db_delivery

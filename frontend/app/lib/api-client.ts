@@ -99,12 +99,13 @@ class APIClient {
    * Get slightly different location for courier (for demo purposes)
    * This simulates a courier very close to the delivery location
    */
-  async getCourierLocation(): Promise<{ lat: number; lon: number; timestamp: number }> {
-    // Coordinates very close to the buyer location (within ~50 meters)
+  async getCourierLocation(): Promise<{ lat: number; lon: number; timestamp: number; accuracy: number }> {
+    // Coordinates in Lima, Peru - very close to the buyer location (within ~50 meters)
     const COURIER_COORDINATES = {
-      lat: 40.7582, // Slightly different latitude (~20 meters north)
-      lon: -73.9857, // Slightly different longitude (~15 meters west)
-      timestamp: Math.floor(Date.now() / 1000)
+      lat: 40.7590, // Slightly different latitude (~20 meters south)
+      lon: -73.9875, // Slightly different longitude (~15 meters west)
+      timestamp: Math.floor(Date.now() / 1000),
+      accuracy: 5 // GPS accuracy in meters (good accuracy for demo)
     }
     
     // Simulate GPS delay
