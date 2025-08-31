@@ -16,25 +16,25 @@ interface OrderParams {
 const USDC_ABI = [{
   "name": "approve",
   "inputs": [
-    {"type": "address", "name": "spender"},
-    {"type": "uint256", "name": "amount"}
+    { "type": "address", "name": "spender" },
+    { "type": "uint256", "name": "amount" }
   ],
-  "outputs": [{"type": "bool"}],
+  "outputs": [{ "type": "bool" }],
   "stateMutability": "nonpayable",
   "type": "function"
 }, {
   "name": "balanceOf",
-  "inputs": [{"type": "address", "name": "account"}],
-  "outputs": [{"type": "uint256"}],
+  "inputs": [{ "type": "address", "name": "account" }],
+  "outputs": [{ "type": "uint256" }],
   "stateMutability": "view",
   "type": "function"
 }, {
   "name": "allowance",
   "inputs": [
-    {"type": "address", "name": "owner"},
-    {"type": "address", "name": "spender"}
+    { "type": "address", "name": "owner" },
+    { "type": "address", "name": "spender" }
   ],
-  "outputs": [{"type": "uint256"}],
+  "outputs": [{ "type": "uint256" }],
   "stateMutability": "view",
   "type": "function"
 }] as const
@@ -66,7 +66,7 @@ const USDC_CONTRACT_ADDRESS = "0x613cd54CF57424Db3e4D66B108d847D26E6630C0"
 export default function CreateOrderPage() {
   const { client, address } = useSmartAccountClient({})
   // Initialize with current wallet address if available
-  console.log( client?.account)
+  console.log(client?.account)
   const [formData, setFormData] = useState<OrderParams>({
     buyer: client?.account?.address || address || "",
     merchant: "",
@@ -101,6 +101,30 @@ export default function CreateOrderPage() {
     },
   })
 
+  const checkUSDCBalance = async () => {
+    if (!client || !address) return
+
+    try {
+      // const data = encodeFunctionData({
+      //   abi: USDC_ABI,
+      //   functionName: 'balanceOf',
+      //   args: [address as `0x${string}`]
+      // })
+
+      const result = await client.readContract({
+        address: USDC_CONTRACT_ADDRESS as `0x${string}`,
+        abi: USDC_ABI,
+        functionName: 'balanceOf',
+        args: [address as `0x${string}`]
+      })
+
+      const balance = (Number(result) / 1000000).toFixed(2)
+      setUsdcBalance(balance)
+    } catch (err) {
+      console.error("Error checking USDC balance:", err)
+    }
+  }
+
   // Auto-fill buyer address when wallet connects and check balance
   React.useEffect(() => {
     const buyerAddress = client?.account?.address || address
@@ -108,14 +132,14 @@ export default function CreateOrderPage() {
       setFormData(prev => ({ ...prev, buyer: buyerAddress }))
       checkUSDCBalance()
     }
-  }, [client?.account?.address, address, formData.buyer])
+  }, [client?.account?.address, address, formData.buyer, checkUSDCBalance])
 
   // Check balance when client changes
   React.useEffect(() => {
     if (client && address) {
       checkUSDCBalance()
     }
-  }, [client, address])
+  }, [client, address,checkUSDCBalance])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -132,42 +156,20 @@ export default function CreateOrderPage() {
     timestampBytes[1] = (timestamp >> 16) & 0xFF
     timestampBytes[2] = (timestamp >> 8) & 0xFF
     timestampBytes[3] = timestamp & 0xFF
-    
+
     const combined = new Uint8Array(32)
     combined.set(timestampBytes, 0)
     combined.set(randomBytes, 4)
-    
+
     const orderId = "0x" + Array.from(combined).map(b => b.toString(16).padStart(2, '0')).join('')
     setFormData(prev => ({ ...prev, orderId }))
   }
 
-  const checkUSDCBalance = async () => {
-    if (!client || !address) return
-    
-    try {
-      const data = encodeFunctionData({
-        abi: USDC_ABI,
-        functionName: 'balanceOf',
-        args: [address as `0x${string}`]
-      })
 
-      const result = await client.readContract({
-        address: USDC_CONTRACT_ADDRESS as `0x${string}`,
-        abi: USDC_ABI,
-        functionName: 'balanceOf',
-        args: [address as `0x${string}`]
-      })
-
-      const balance = (Number(result) / 1000000).toFixed(2)
-      setUsdcBalance(balance)
-    } catch (err) {
-      console.error("Error checking USDC balance:", err)
-    }
-  }
 
   const checkUSDCAllowance = async (amount: bigint) => {
     if (!client || !address) return false
-    
+
     try {
       const allowance = await client.readContract({
         address: USDC_CONTRACT_ADDRESS as `0x${string}`,
@@ -280,7 +282,7 @@ export default function CreateOrderPage() {
 
       // Check if we need to approve USDC spending
       const hasAllowance = await checkUSDCAllowance(amountInUSDC)
-      
+
       if (!hasAllowance && !isApproved) {
         // Need to approve first
         const approved = await approveUSDC(amountInUSDC)
@@ -506,7 +508,7 @@ export default function CreateOrderPage() {
                   fontWeight: 'var(--weight-regular)',
                   lineHeight: 'var(--leading-body)'
                 }}>
-                  After this time, the buyer can request a refund if order hasn't been released
+                  After this time, the buyer can request a refund if order hasnt been released
                 </p>
               </div>
 

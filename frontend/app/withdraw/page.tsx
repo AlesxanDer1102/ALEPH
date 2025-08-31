@@ -56,7 +56,7 @@ export default function WithdrawPage() {
     if (client && address) {
       checkMerchantBalance()
     }
-  }, [client, address])
+  }, [client, address, checkMerchantBalance])
 
   const validateForm = (): string | null => {
     if (!withdrawAll) {
@@ -69,18 +69,18 @@ export default function WithdrawPage() {
         return `Insufficient balance. You have ${balance} USDC available`
       }
     }
-    
+
     const balance = parseFloat(merchantBalance)
     if (balance <= 0) {
       return "No balance available to withdraw"
     }
-    
+
     return null
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const validationError = validateForm()
     if (validationError) {
       setError(validationError)
@@ -94,7 +94,7 @@ export default function WithdrawPage() {
 
     setError("")
     setSuccess("")
-    
+
     try {
       // Convert amount to USDC format (6 decimals), or 0 for withdraw all
       const amountInUSDC = withdrawAll ? BigInt(0) : BigInt(Math.floor(parseFloat(amount) * 1000000))
@@ -120,7 +120,7 @@ export default function WithdrawPage() {
           value: BigInt(0),
         },
       })
-      
+
     } catch (err) {
       console.error("Error processing withdrawal:", err)
       setError(err instanceof Error ? err.message : "Failed to process withdrawal")
@@ -174,7 +174,7 @@ export default function WithdrawPage() {
                     </span>
                   )}
                 </label>
-                
+
                 {/* Withdraw All Option */}
                 <div className="flex items-center space-x-3">
                   <input
@@ -286,7 +286,7 @@ export default function WithdrawPage() {
                   <li>• Only merchants can withdraw their accumulated balance</li>
                   <li>• Balance comes from completed (released) orders</li>
                   <li>• Withdrawals are processed immediately</li>
-                  <li>• Use amount 0 or "withdraw all" to claim entire balance</li>
+                  <li>• Use amount 0 or &#34 withdraw all &#34 to claim entire balance</li>
                   <li>• Connected wallet must be the merchant address</li>
                 </ul>
               </div>

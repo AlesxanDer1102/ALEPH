@@ -58,11 +58,11 @@ export default function RefundPage() {
       })
 
       const order = {
-        buyer: (result as any)[0],
-        merchant: (result as any)[1],
-        amount: BigInt((result as any)[2]),
-        timeout: BigInt((result as any)[4]), // timeout is at index 4
-        status: Number((result as any)[6]) // status is at index 6
+        buyer: (result as readonly unknown[])[0] as string,
+        merchant: (result as readonly unknown[])[1] as string,
+        amount: BigInt((result as readonly unknown[])[2] as string | number | bigint),
+        timeout: BigInt((result as readonly unknown[])[4] as string | number | bigint), // timeout is at index 4
+        status: Number((result as readonly unknown[])[6] as string | number) // status is at index 6
       }
 
       setOrderInfo(order)
@@ -192,7 +192,7 @@ export default function RefundPage() {
           <div className="bg-gradient-to-r from-[#3A71FC] to-[#1C9EEF] px-6 py-4">
             <h1 className="text-2xl font-bold text-white">Request Refund</h1>
             <p className="text-white/90 text-sm mt-1">
-              Request a refund for an expired order that hasn't been released
+              Request a refund for an expired order that hasn&apos;t been released
             </p>
           </div>
 
@@ -236,9 +236,9 @@ export default function RefundPage() {
                     <p><strong>Timeout:</strong> {new Date(Number(orderInfo.timeout) * 1000).toLocaleString()}</p>
                     <p><strong>Status:</strong>
                       <span className={`ml-1 px-2 py-1 rounded text-xs font-medium ${orderInfo.status === OrderStatus.CREATED ? 'bg-green-100 text-green-700' :
-                          orderInfo.status === OrderStatus.RELEASED ? 'bg-blue-100 text-blue-700' :
-                            orderInfo.status === OrderStatus.REFUNDED ? 'bg-gray-100 text-gray-700' :
-                              'bg-red-100 text-red-700'
+                        orderInfo.status === OrderStatus.RELEASED ? 'bg-blue-100 text-blue-700' :
+                          orderInfo.status === OrderStatus.REFUNDED ? 'bg-gray-100 text-gray-700' :
+                            'bg-red-100 text-red-700'
                         }`}>
                         {orderInfo.status === OrderStatus.CREATED ? 'CREATED' :
                           orderInfo.status === OrderStatus.RELEASED ? 'RELEASED' :
@@ -251,7 +251,7 @@ export default function RefundPage() {
                           <p className="text-green-800 font-medium">✓ You are eligible to request a refund for this order</p>
                           {Number(orderInfo.timeout) > Math.floor(Date.now() / 1000) && (
                             <p className="text-orange-700 text-xs mt-1">
-                              ⚠ Timeout hasn't passed yet. You can refund after {new Date(Number(orderInfo.timeout) * 1000).toLocaleString()}
+                              ⚠ Timeout hasn&apos;t passed yet. You can refund after {new Date(Number(orderInfo.timeout) * 1000).toLocaleString()}
                             </p>
                           )}
                         </div>
