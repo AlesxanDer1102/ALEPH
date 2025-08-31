@@ -110,12 +110,15 @@ def confirm_delivery(req: schemas.DeliveryConfirmationRequest, db: Session = Dep
     Courier-triggered endpoint to confirm delivery using OTP/QR, which triggers
     the backend to sign and relay the `release` transaction.
     """
+    # Se obtiene la sesion de la orden
     order_id_bytes = bytes.fromhex(req.order_id[2:])
     session = crud.get_active_otp_session(db, order_id=order_id_bytes)
     
+    # verificamos que exista o que no haya expirado
     if not session or session.expires_at.timestamp() < time.time():
         raise HTTPException(status_code=404, detail="No active OTP/QR session found or session expired")
 
+    # se verifica o bien que otp sea el mismo que indica la sesion, o que el qr token sea el mismo
     is_valid = False
     if req.otp and session.otp_hash:
         expected_hash = hash_otp(order_id_bytes, req.otp, settings.OTP_PEPPER)
@@ -127,12 +130,13 @@ def confirm_delivery(req: schemas.DeliveryConfirmationRequest, db: Session = Dep
             is_valid = True
     
     if not is_valid:
-        # In a real app, increment attempt counter and add cooldown logic
         raise HTTPException(status_code=403, detail="Invalid OTP or QR token")
 
     order = crud.get_order(db, order_id=order_id_bytes)
     
+    # Se realiza la firma para confirmar la compra
     try:
+        # Esta es la firma!
         auth_dict, signature = sign_release_auth(
             order_id_hex=req.order_id,
             merchant_addr='0x' + order.merchant_address.hex(),
@@ -141,7 +145,10 @@ def confirm_delivery(req: schemas.DeliveryConfirmationRequest, db: Session = Dep
 
         tx_hash = send_release_transaction(req.order_id, auth_dict, signature)
 
+        # Se hashea la posicion del courier
         gps_courier_hash = hash_gps(req.gps_courier.lat, req.gps_courier.lon, req.gps_courier.timestamp, "courier_pepper")
+
+        # Se crea el registro de entrega
         crud.create_delivery_record(db, {
             "order_id": order_id_bytes,
             "otp_id": session.otp_id,
@@ -152,6 +159,7 @@ def confirm_delivery(req: schemas.DeliveryConfirmationRequest, db: Session = Dep
             "release_tx_hash": bytes.fromhex(tx_hash[2:])
         })
 
+        # Se pasa el status de la sesion de OTP a "USED"
         crud.use_otp_session(db, session.otp_id)
 
         return {

@@ -40,6 +40,7 @@ ESCROW_ABI = json.loads('''
 ]
 ''')
 
+# Instaciamos el contrato y asociamos el ABI
 contract = w3.eth.contract(
     address=Web3.to_checksum_address(settings.CONTRACT_ADDRESS),
     abi=ESCROW_ABI
@@ -73,7 +74,7 @@ def send_release_transaction(order_id_hex: str, auth: dict, signature_bytes: byt
         })
 
         signed_tx = ops_account.sign_transaction(tx)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
         
         return tx_hash.hex()
     

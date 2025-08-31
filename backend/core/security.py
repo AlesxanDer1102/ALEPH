@@ -4,17 +4,19 @@ import hashlib
 import time
 import secrets
 from eth_account import Account
-from eth_account.messages import encode_structured_data
+from eth_account.messages import encode_typed_data
 from web3 import Web3
 
 from core.config import settings
 
 # EIP712 Domain and Types definition
+# CORRECCIÓN: Se añade el campo 'salt' para que coincida con la estructura del contrato.
 DOMAIN = {
     "name": settings.EIP712_DOMAIN_NAME,
     "version": settings.EIP712_DOMAIN_VERSION,
     "chainId": settings.CHAIN_ID,
     "verifyingContract": Web3.to_checksum_address(settings.CONTRACT_ADDRESS),
+    "salt": b'\x00' * 32
 }
 
 TYPES = {
@@ -64,6 +66,7 @@ def sign_release_auth(
         "authNonce": auth_nonce_bytes,
     }
 
+    # CORRECCIÓN: Se añade 'salt' a la definición del tipo EIP712Domain.
     structured_data = {
         "types": {
             "EIP712Domain": [
@@ -71,6 +74,7 @@ def sign_release_auth(
                 {"name": "version", "type": "string"},
                 {"name": "chainId", "type": "uint256"},
                 {"name": "verifyingContract", "type": "address"},
+                {"name": "salt", "type": "bytes32"},
             ],
             **TYPES,
         },
@@ -80,7 +84,8 @@ def sign_release_auth(
     }
 
     try:
-        signable_message = encode_structured_data(structured_data)
+        # Usamos encode_typed_data, que es la función correcta y actualizada.
+        signable_message = encode_typed_data(full_message=structured_data)
         private_key = settings.AUTH_SIGNER_PRIVKEY
         signed_message = Account.sign_message(signable_message, private_key=private_key)
         
@@ -102,3 +107,4 @@ def generate_otp(length: int = 6) -> str:
 def generate_qr_token() -> str:
     """Generates a secure random token for QR codes."""
     return secrets.token_urlsafe(32)
+
