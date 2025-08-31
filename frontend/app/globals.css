@@ -3,6 +3,35 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Fuentes */
+  --font-primary: 'Space Grotesk', sans-serif;   /* Headers, branding */
+  --font-secondary: 'Inter', sans-serif;        /* UI, body */
+  --font-mono: 'IBM Plex Mono', monospace;      /* Data técnica blockchain */
+
+  /* Escala tipográfica */
+  --text-h1: 40px;
+  --text-h2: 28px;
+  --text-h3: 22px;
+  --text-h4: 18px;
+
+  --text-body-lg: 16px;
+  --text-body-md: 14px;
+  --text-body-sm: 12px;
+
+  --text-button: 16px;
+  --text-label: 14px;
+  --text-caption: 12px;
+
+  /* Pesos */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Line-height */
+  --leading-header: 120%;
+  --leading-body: 150%;
 }
 
 @theme inline {
