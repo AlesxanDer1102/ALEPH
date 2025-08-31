@@ -56,7 +56,7 @@ export default function WithdrawPage() {
     if (client && address) {
       checkMerchantBalance()
     }
-  }, [client, address, checkMerchantBalance])
+  }, [client, address])
 
   const validateForm = (): string | null => {
     if (!withdrawAll) {

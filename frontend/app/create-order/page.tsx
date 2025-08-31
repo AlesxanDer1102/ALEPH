@@ -139,7 +139,7 @@ export default function CreateOrderPage() {
     if (client && address) {
       checkUSDCBalance()
     }
-  }, [client, address,checkUSDCBalance])
+  }, [client, address])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
