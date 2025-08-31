@@ -3,16 +3,6 @@ import { createConfig, cookieStorage, configForExternalWallets } from "@account-
 import { QueryClient } from "@tanstack/react-query"
 import { alchemy, sepolia } from "@account-kit/infra"
 
-// Safe environment variable loading
-const getEnvVar = (key: string): string => {
-    if (typeof window !== "undefined") {
-        // Client-side: use process.env with NEXT_PUBLIC_ prefix
-        return process.env[`NEXT_PUBLIC_${key}`]!
-    }
-    // Server-side: use process.env directly
-    return process.env[key] || process.env[`NEXT_PUBLIC_${key}`]!
-}
-
 export const externalWalletsConfig = configForExternalWallets({
     wallets: ["wallet_connect", "metamask"],
     chainType: ["evm"],
