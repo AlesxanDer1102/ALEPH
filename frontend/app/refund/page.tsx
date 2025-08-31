@@ -3,28 +3,31 @@ import { useState } from "react"
 import { useSmartAccountClient, useSendUserOperation } from "@account-kit/react"
 import { Header } from "../components/Header"
 import { encodeFunctionData } from "viem"
+import { ESCROW_CONTRACT_ADDRESS, scrowPayAbi } from "../constants"
 
-// Contract ABI for refund function
-const REFUND_ABI = [{
-  "inputs": [{
-    "internalType": "bytes32",
-    "name": "orderId",
-    "type": "bytes32"
-  }],
-  "name": "refund",
-  "outputs": [],
-  "stateMutability": "nonpayable",
-  "type": "function"
-}] as const
 
-// Replace with your actual contract address
-const ESCROW_CONTRACT_ADDRESS = "0x1234567890123456789012345678901234567890"
+// Order status enum
+enum OrderStatus {
+  CREATED = 0,
+  RELEASED = 1,
+  REFUNDED = 2
+}
+
+interface OrderInfo {
+  buyer: string
+  merchant: string
+  amount: bigint
+  timeout: bigint
+  status: number
+}
 
 export default function RefundPage() {
   const { client, address } = useSmartAccountClient({})
   const [orderId, setOrderId] = useState("")
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null)
+  const [isCheckingOrder, setIsCheckingOrder] = useState(false)
 
   const { sendUserOperation, isSendingUserOperation } = useSendUserOperation({
     client,
@@ -40,11 +43,87 @@ export default function RefundPage() {
     },
   })
 
+  const checkOrderInfo = async (orderIdToCheck: string) => {
+    if (!client || !orderIdToCheck.match(/^0x[a-fA-F0-9]{64}$/)) {
+      return null
+    }
+
+    try {
+      setIsCheckingOrder(true)
+      const result = await client.readContract({
+        address: ESCROW_CONTRACT_ADDRESS,
+        abi: scrowPayAbi,
+        functionName: 'orders',
+        args: [orderIdToCheck as `0x${string}`]
+      })
+
+      const order = {
+        buyer: (result as any)[0],
+        merchant: (result as any)[1], 
+        amount: BigInt((result as any)[2]),
+        timeout: BigInt((result as any)[4]), // timeout is at index 4
+        status: Number((result as any)[6]) // status is at index 6
+      }
+
+      setOrderInfo(order)
+      return order
+    } catch (err) {
+      console.error("Error fetching order:", err)
+      setError("Order not found or failed to fetch order details")
+      setOrderInfo(null)
+      return null
+    } finally {
+      setIsCheckingOrder(false)
+    }
+  }
+
+  const validateRefundConditions = (order: OrderInfo, userAddress: string): string | null => {
+    // Check if user is the buyer
+    if (order.buyer.toLowerCase() !== userAddress.toLowerCase()) {
+      return "You are not the buyer of this order"
+    }
+
+    // Check order status
+    if (order.status !== OrderStatus.CREATED) {
+      switch (order.status) {
+        case OrderStatus.RELEASED:
+          return "Order has already been released to merchant"
+        case OrderStatus.REFUNDED:
+          return "Order has already been refunded"
+        default:
+          return "Invalid order status"
+      }
+    }
+
+    // Check if timeout has passed
+    const currentTime = Math.floor(Date.now() / 1000)
+    if (Number(order.timeout) > currentTime) {
+      const timeRemaining = Number(order.timeout) - currentTime
+      const hoursRemaining = Math.ceil(timeRemaining / 3600)
+      return `Order timeout has not passed yet. ${hoursRemaining} hours remaining.`
+    }
+
+    return null
+  }
+
   const validateForm = (): string | null => {
     if (!orderId.match(/^0x[a-fA-F0-9]{64}$/)) {
       return "Invalid order ID format (must be 32 bytes hex)"
     }
     return null
+  }
+
+  const handleOrderIdChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setOrderId(value)
+    setError("")
+    setSuccess("")
+    setOrderInfo(null)
+
+    // Auto-check order if valid format
+    if (value.match(/^0x[a-fA-F0-9]{64}$/)) {
+      await checkOrderInfo(value)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,8 +135,24 @@ export default function RefundPage() {
       return
     }
 
-    if (!client) {
+    if (!client || !address) {
       setError("Wallet not connected")
+      return
+    }
+
+    // Check order info if not already loaded
+    let order = orderInfo
+    if (!order) {
+      order = await checkOrderInfo(orderId)
+      if (!order) {
+        return // Error already set in checkOrderInfo
+      }
+    }
+
+    // Validate refund conditions
+    const conditionError = validateRefundConditions(order, address)
+    if (conditionError) {
+      setError(conditionError)
       return
     }
 
@@ -69,7 +164,7 @@ export default function RefundPage() {
 
       // Encode function data
       const data = encodeFunctionData({
-        abi: REFUND_ABI,
+        abi: scrowPayAbi,
         functionName: 'refund',
         args: [orderId as `0x${string}`]
       })
@@ -108,24 +203,68 @@ export default function RefundPage() {
                 <label htmlFor="orderId" className="block text-sm font-semibold text-[#3A71FC]">
                   Order ID
                 </label>
-                <input
-                  type="text"
-                  id="orderId"
-                  name="orderId"
-                  value={orderId}
-                  onChange={(e) => {
-                    setOrderId(e.target.value)
-                    setError("")
-                    setSuccess("")
-                  }}
-                  placeholder="0x..."
-                  className="w-full px-4 py-3 border-2 border-[#3A71FC]/30 bg-gray-50 rounded-lg font-mono text-sm text-gray-900 font-medium focus:outline-none focus:border-[#3A71FC] focus:bg-white transition-colors placeholder:text-gray-500"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="orderId"
+                    name="orderId"
+                    value={orderId}
+                    onChange={handleOrderIdChange}
+                    placeholder="0x..."
+                    className="w-full px-4 py-3 border-2 border-[#3A71FC]/30 bg-gray-50 rounded-lg font-mono text-sm text-gray-900 font-medium focus:outline-none focus:border-[#3A71FC] focus:bg-white transition-colors placeholder:text-gray-500"
+                    required
+                  />
+                  {isCheckingOrder && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin h-4 w-4 border-2 border-[#3A71FC] border-t-transparent rounded-full"></div>
+                    </div>
+                  )}
+                </div>
                 <p className="text-xs text-gray-600">
                   Enter the 32-byte hex order ID for the order you want to refund
                 </p>
               </div>
+
+              {/* Order Info Display */}
+              {orderInfo && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-blue-800 mb-2">Order Information</h3>
+                  <div className="text-xs text-blue-700 space-y-1">
+                    <p><strong>Buyer:</strong> {orderInfo.buyer}</p>
+                    <p><strong>Merchant:</strong> {orderInfo.merchant}</p>
+                    <p><strong>Amount:</strong> {(Number(orderInfo.amount) / 1000000).toFixed(2)} USDC</p>
+                    <p><strong>Timeout:</strong> {new Date(Number(orderInfo.timeout) * 1000).toLocaleString()}</p>
+                    <p><strong>Status:</strong> 
+                      <span className={`ml-1 px-2 py-1 rounded text-xs font-medium ${
+                        orderInfo.status === OrderStatus.CREATED ? 'bg-green-100 text-green-700' :
+                        orderInfo.status === OrderStatus.RELEASED ? 'bg-blue-100 text-blue-700' :
+                        orderInfo.status === OrderStatus.REFUNDED ? 'bg-gray-100 text-gray-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {orderInfo.status === OrderStatus.CREATED ? 'CREATED' :
+                         orderInfo.status === OrderStatus.RELEASED ? 'RELEASED' :
+                         orderInfo.status === OrderStatus.REFUNDED ? 'REFUNDED' : 'UNKNOWN'}
+                      </span>
+                    </p>
+                    {address && orderInfo.buyer.toLowerCase() === address.toLowerCase() && 
+                     orderInfo.status === OrderStatus.CREATED && (
+                      <div className="mt-2 p-2 bg-green-100 rounded">
+                        <p className="text-green-800 font-medium">✓ You are eligible to request a refund for this order</p>
+                        {Number(orderInfo.timeout) > Math.floor(Date.now() / 1000) && (
+                          <p className="text-orange-700 text-xs mt-1">
+                            ⚠ Timeout hasn't passed yet. You can refund after {new Date(Number(orderInfo.timeout) * 1000).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {address && orderInfo.buyer.toLowerCase() !== address.toLowerCase() && (
+                      <div className="mt-2 p-2 bg-red-100 rounded">
+                        <p className="text-red-800 font-medium">✗ You are not the buyer of this order</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Refund Conditions Info */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -134,6 +273,7 @@ export default function RefundPage() {
                   <li>• Order must exist and be in CREATED status</li>
                   <li>• Order timeout must have passed</li>
                   <li>• Order must not have been released or refunded already</li>
+                  <li>• Only the buyer can request a refund</li>
                   <li>• Full amount will be returned to the buyer</li>
                 </ul>
               </div>
@@ -155,10 +295,24 @@ export default function RefundPage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSendingUserOperation || !client}
+                disabled={
+                  isSendingUserOperation || 
+                  !client || 
+                  !address ||
+                  isCheckingOrder ||
+                  !orderInfo ||
+                  orderInfo.buyer.toLowerCase() !== address.toLowerCase() ||
+                  orderInfo.status !== OrderStatus.CREATED ||
+                  Number(orderInfo.timeout) > Math.floor(Date.now() / 1000)
+                }
                 className="w-full px-6 py-4 bg-gradient-to-r from-[#3A71FC] to-[#1C9EEF] hover:from-[#2861eb] hover:to-[#1689d6] disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
               >
-                {isSendingUserOperation ? (
+                {isCheckingOrder ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                    <span>Checking Order...</span>
+                  </div>
+                ) : isSendingUserOperation ? (
                   <div className="flex items-center justify-center space-x-2">
                     <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
                     <span>Processing Refund...</span>
