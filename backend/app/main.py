@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import time
@@ -20,6 +21,20 @@ from app.relayer import send_release_transaction
 #Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Escrow DApp Backend")
+
+# Configure CORS for frontend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000", 
+        "http://localhost:3001",
+        "http://127.0.0.1:3001"
+    ],  # Frontend URLs (Next.js default ports)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 # Endpoint para que el frontend registre un pedido
 @app.post("/orders", response_model=schemas.OrderResponse, status_code=201)
