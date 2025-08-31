@@ -199,8 +199,8 @@ export const scrowPayAbi = [
             { "name": "merchant", "type": "address", "internalType": "address" },
             { "name": "amount", "type": "uint256", "internalType": "uint256" },
             { "name": "feeCharged", "type": "uint256", "internalType": "uint256" },
-            { "name": "createdAt", "type": "uint64", "internalType": "uint64" },
             { "name": "timeout", "type": "uint64", "internalType": "uint64" },
+            { "name": "createdAt", "type": "uint64", "internalType": "uint64" },
             {
                 "name": "status",
                 "type": "uint8",
