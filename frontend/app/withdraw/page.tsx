@@ -1,24 +1,10 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSmartAccountClient, useSendUserOperation } from "@account-kit/react"
 import { Header } from "../components/Header"
 import { encodeFunctionData } from "viem"
+import { ESCROW_CONTRACT_ADDRESS, scrowPayAbi } from "../constants"
 
-// Contract ABI for withdraw function
-const WITHDRAW_ABI = [{
-  "inputs": [{
-    "internalType": "uint256",
-    "name": "amount",
-    "type": "uint256"
-  }],
-  "name": "withdraw",
-  "outputs": [],
-  "stateMutability": "nonpayable",
-  "type": "function"
-}] as const
-
-// Replace with your actual contract address
-const ESCROW_CONTRACT_ADDRESS = "0x1234567890123456789012345678901234567890"
 
 export default function WithdrawPage() {
   const { client, address } = useSmartAccountClient({})
@@ -26,6 +12,8 @@ export default function WithdrawPage() {
   const [withdrawAll, setWithdrawAll] = useState(true)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const [merchantBalance, setMerchantBalance] = useState<string>("")
+  const [isCheckingBalance, setIsCheckingBalance] = useState(false)
 
   const { sendUserOperation, isSendingUserOperation } = useSendUserOperation({
     client,
@@ -42,12 +30,51 @@ export default function WithdrawPage() {
     },
   })
 
+  const checkMerchantBalance = async () => {
+    if (!client || !address) return
+
+    try {
+      setIsCheckingBalance(true)
+      const result = await client.readContract({
+        address: ESCROW_CONTRACT_ADDRESS,
+        abi: scrowPayAbi,
+        functionName: 'merchantBalances',
+        args: [address as `0x${string}`]
+      })
+
+      const balance = (Number(result) / 1000000).toFixed(2)
+      setMerchantBalance(balance)
+    } catch (err) {
+      console.error("Error checking merchant balance:", err)
+      setError("Failed to fetch merchant balance")
+    } finally {
+      setIsCheckingBalance(false)
+    }
+  }
+
+  useEffect(() => {
+    if (client && address) {
+      checkMerchantBalance()
+    }
+  }, [client, address])
+
   const validateForm = (): string | null => {
     if (!withdrawAll) {
       if (!amount || parseFloat(amount) <= 0) {
         return "Amount must be greater than 0"
       }
+      const balance = parseFloat(merchantBalance)
+      const requestedAmount = parseFloat(amount)
+      if (requestedAmount > balance) {
+        return `Insufficient balance. You have ${balance} USDC available`
+      }
     }
+    
+    const balance = parseFloat(merchantBalance)
+    if (balance <= 0) {
+      return "No balance available to withdraw"
+    }
+    
     return null
   }
 
@@ -80,7 +107,7 @@ export default function WithdrawPage() {
 
       // Encode function data
       const data = encodeFunctionData({
-        abi: WITHDRAW_ABI,
+        abi: scrowPayAbi,
         functionName: 'withdraw',
         args: [amountInUSDC]
       })
@@ -106,9 +133,24 @@ export default function WithdrawPage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="bg-gradient-to-r from-[#3A71FC] to-[#1C9EEF] px-6 py-4">
-            <h1 className="text-2xl font-bold text-white">Withdraw Funds</h1>
-            <p className="text-white/90 text-sm mt-1">
+            <h1 className="text-white" style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--text-h2)',
+              fontWeight: 'var(--weight-bold)',
+              lineHeight: 'var(--leading-header)'
+            }}>Withdraw Funds</h1>
+            <p className="text-white/90 mt-1" style={{
+              fontFamily: 'var(--font-secondary)',
+              fontSize: 'var(--text-body-md)',
+              fontWeight: 'var(--weight-regular)',
+              lineHeight: 'var(--leading-body)'
+            }}>
               Withdraw your accumulated merchant balance from completed orders
+              {merchantBalance && (
+                <span className="block text-white font-medium mt-1">
+                  Available: {merchantBalance} USDC
+                </span>
+              )}
             </p>
           </div>
 
@@ -116,8 +158,21 @@ export default function WithdrawPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Withdrawal Type */}
               <div className="space-y-4">
-                <label className="block text-sm font-semibold text-[#3A71FC]">
+                <label className="block text-[#3A71FC]" style={{
+                  fontFamily: 'var(--font-secondary)',
+                  fontSize: 'var(--text-label)',
+                  fontWeight: 'var(--weight-semibold)'
+                }}>
                   Withdrawal Amount
+                  {merchantBalance && (
+                    <span className="ml-2 text-gray-600" style={{
+                      fontFamily: 'var(--font-secondary)',
+                      fontSize: 'var(--text-caption)',
+                      fontWeight: 'var(--weight-regular)'
+                    }}>
+                      Available: {merchantBalance} USDC
+                    </span>
+                  )}
                 </label>
                 
                 {/* Withdraw All Option */}
@@ -135,7 +190,11 @@ export default function WithdrawPage() {
                     }}
                     className="w-4 h-4 text-[#3A71FC] border-2 border-[#3A71FC]/30 focus:ring-[#3A71FC] focus:ring-2"
                   />
-                  <label htmlFor="withdrawAll" className="text-sm font-medium text-gray-700">
+                  <label htmlFor="withdrawAll" className="text-gray-700" style={{
+                    fontFamily: 'var(--font-secondary)',
+                    fontSize: 'var(--text-body-md)',
+                    fontWeight: 'var(--weight-medium)'
+                  }}>
                     Withdraw all available balance
                   </label>
                 </div>
@@ -154,7 +213,11 @@ export default function WithdrawPage() {
                     }}
                     className="w-4 h-4 text-[#3A71FC] border-2 border-[#3A71FC]/30 focus:ring-[#3A71FC] focus:ring-2"
                   />
-                  <label htmlFor="withdrawPartial" className="text-sm font-medium text-gray-700">
+                  <label htmlFor="withdrawPartial" className="text-gray-700" style={{
+                    fontFamily: 'var(--font-secondary)',
+                    fontSize: 'var(--text-body-md)',
+                    fontWeight: 'var(--weight-medium)'
+                  }}>
                     Withdraw specific amount
                   </label>
                 </div>
@@ -163,7 +226,11 @@ export default function WithdrawPage() {
               {/* Amount Input (only shown for partial withdrawal) */}
               {!withdrawAll && (
                 <div className="space-y-2">
-                  <label htmlFor="amount" className="block text-sm font-semibold text-[#3A71FC]">
+                  <label htmlFor="amount" className="block text-[#3A71FC]" style={{
+                    fontFamily: 'var(--font-secondary)',
+                    fontSize: 'var(--text-label)',
+                    fontWeight: 'var(--weight-semibold)'
+                  }}>
                     Amount (USDC)
                   </label>
                   <input
@@ -179,19 +246,43 @@ export default function WithdrawPage() {
                     placeholder="100.00"
                     step="0.01"
                     min="0.01"
-                    className="w-full px-4 py-3 border-2 border-[#3A71FC]/30 bg-gray-50 rounded-lg text-sm text-gray-900 font-semibold focus:outline-none focus:border-[#3A71FC] focus:bg-white transition-colors placeholder:text-gray-500"
+                    className="w-full px-4 py-3 border-2 border-[#3A71FC]/30 bg-gray-50 rounded-lg text-gray-900 focus:outline-none focus:border-[#3A71FC] focus:bg-white transition-colors placeholder:text-gray-500"
+                    style={{
+                      fontFamily: 'var(--font-secondary)',
+                      fontSize: 'var(--text-body-md)',
+                      fontWeight: 'var(--weight-semibold)'
+                    }}
                     required={!withdrawAll}
                   />
-                  <p className="text-xs text-gray-600">
+                  <p className="text-gray-600" style={{
+                    fontFamily: 'var(--font-secondary)',
+                    fontSize: 'var(--text-caption)',
+                    fontWeight: 'var(--weight-regular)',
+                    lineHeight: 'var(--leading-body)'
+                  }}>
                     Specify the amount to withdraw (will be converted to 6 decimal format)
+                    {merchantBalance && parseFloat(amount) > parseFloat(merchantBalance) && (
+                      <span className="block text-red-600 font-medium mt-1">
+                        ⚠ Amount exceeds your available balance
+                      </span>
+                    )}
                   </p>
                 </div>
               )}
 
               {/* Withdrawal Info */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-blue-800 mb-2">Withdrawal Information</h3>
-                <ul className="text-xs text-blue-700 space-y-1">
+                <h3 className="text-blue-800 mb-2" style={{
+                  fontFamily: 'var(--font-secondary)',
+                  fontSize: 'var(--text-body-md)',
+                  fontWeight: 'var(--weight-semibold)'
+                }}>Withdrawal Information</h3>
+                <ul className="text-blue-700 space-y-1" style={{
+                  fontFamily: 'var(--font-secondary)',
+                  fontSize: 'var(--text-caption)',
+                  fontWeight: 'var(--weight-regular)',
+                  lineHeight: 'var(--leading-body)'
+                }}>
                   <li>• Only merchants can withdraw their accumulated balance</li>
                   <li>• Balance comes from completed (released) orders</li>
                   <li>• Withdrawals are processed immediately</li>
@@ -203,34 +294,78 @@ export default function WithdrawPage() {
               {/* Error Display */}
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="text-red-700 text-sm font-medium">{error}</p>
+                  <p className="text-red-700" style={{
+                    fontFamily: 'var(--font-secondary)',
+                    fontSize: 'var(--text-body-md)',
+                    fontWeight: 'var(--weight-medium)'
+                  }}>{error}</p>
                 </div>
               )}
 
               {/* Success Display */}
               {success && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-green-700 text-sm font-medium">{success}</p>
+                  <p className="text-green-700" style={{
+                    fontFamily: 'var(--font-secondary)',
+                    fontSize: 'var(--text-body-md)',
+                    fontWeight: 'var(--weight-medium)'
+                  }}>{success}</p>
                 </div>
               )}
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSendingUserOperation || !client}
-                className="w-full px-6 py-4 bg-gradient-to-r from-[#3A71FC] to-[#1C9EEF] hover:from-[#2861eb] hover:to-[#1689d6] disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
+                disabled={isSendingUserOperation || !client || isCheckingBalance || parseFloat(merchantBalance) <= 0}
+                className="w-full px-6 py-4 bg-gradient-to-r from-[#3A71FC] to-[#1C9EEF] hover:from-[#2861eb] hover:to-[#1689d6] disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:cursor-not-allowed"
+                style={{
+                  fontFamily: 'var(--font-secondary)',
+                  fontSize: 'var(--text-button)',
+                  fontWeight: 'var(--weight-semibold)'
+                }}
               >
-                {isSendingUserOperation ? (
+                {isCheckingBalance ? (
                   <div className="flex items-center justify-center space-x-2">
                     <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
-                    <span>Processing Withdrawal...</span>
+                    <span style={{
+                      fontFamily: 'var(--font-secondary)',
+                      fontSize: 'var(--text-button)',
+                      fontWeight: 'var(--weight-semibold)'
+                    }}>Checking Balance...</span>
+                  </div>
+                ) : isSendingUserOperation ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                    <span style={{
+                      fontFamily: 'var(--font-secondary)',
+                      fontSize: 'var(--text-button)',
+                      fontWeight: 'var(--weight-semibold)'
+                    }}>Processing Withdrawal...</span>
                   </div>
                 ) : !client ? (
-                  "Connect Wallet to Continue"
+                  <span style={{
+                    fontFamily: 'var(--font-secondary)',
+                    fontSize: 'var(--text-button)',
+                    fontWeight: 'var(--weight-semibold)'
+                  }}>Connect Wallet to Continue</span>
+                ) : parseFloat(merchantBalance) <= 0 ? (
+                  <span style={{
+                    fontFamily: 'var(--font-secondary)',
+                    fontSize: 'var(--text-button)',
+                    fontWeight: 'var(--weight-semibold)'
+                  }}>No Balance Available</span>
                 ) : withdrawAll ? (
-                  "Withdraw All Balance"
+                  <span style={{
+                    fontFamily: 'var(--font-secondary)',
+                    fontSize: 'var(--text-button)',
+                    fontWeight: 'var(--weight-semibold)'
+                  }}>Withdraw All Balance ({merchantBalance} USDC)</span>
                 ) : (
-                  `Withdraw ${amount || '0'} USDC`
+                  <span style={{
+                    fontFamily: 'var(--font-secondary)',
+                    fontSize: 'var(--text-button)',
+                    fontWeight: 'var(--weight-semibold)'
+                  }}>{`Withdraw ${amount || '0'} USDC`}</span>
                 )}
               </button>
             </form>
