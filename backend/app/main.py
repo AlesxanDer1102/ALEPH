@@ -115,8 +115,8 @@ def confirm_delivery(req: schemas.DeliveryConfirmationRequest, db: Session = Dep
     session = crud.get_active_otp_session(db, order_id=order_id_bytes)
     
     # verificamos que exista o que no haya expirado
-    if not session or session.expires_at.timestamp() < time.time():
-        raise HTTPException(status_code=404, detail="No active OTP/QR session found or session expired")
+    #if not session or session.expires_at.timestamp() < time.time():
+    #    raise HTTPException(status_code=404, detail="No active OTP/QR session found or session expired")
 
     # se verifica o bien que otp sea el mismo que indica la sesion, o que el qr token sea el mismo
     is_valid = False

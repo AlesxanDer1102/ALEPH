@@ -4,30 +4,21 @@ import hashlib
 import time
 import secrets
 from eth_account import Account
-from eth_account.messages import encode_typed_data
 from web3 import Web3
+from eth_utils import keccak
+from eth_abi import encode
 
 from core.config import settings
 
-# EIP712 Domain and Types definition
-# CORRECCIÓN: Se añade el campo 'salt' para que coincida con la estructura del contrato.
-DOMAIN = {
-    "name": settings.EIP712_DOMAIN_NAME,
-    "version": settings.EIP712_DOMAIN_VERSION,
-    "chainId": settings.CHAIN_ID,
-    "verifyingContract": Web3.to_checksum_address(settings.CONTRACT_ADDRESS),
-    "salt": b'\x00' * 32
-}
+# Domain separator obtenido del contrato desplegado
+DOMAIN_SEPARATOR = Web3.to_bytes(
+    hexstr="0xd8774c26f4ca3cfa065de9b839031709301b943e2d4242d72cba4459eb37fc27"
+)
 
-TYPES = {
-    "ReleaseAuth": [
-        {"name": "orderId", "type": "bytes32"},
-        {"name": "merchant", "type": "address"},
-        {"name": "amount", "type": "uint256"},
-        {"name": "exp", "type": "uint64"},
-        {"name": "authNonce", "type": "bytes32"},
-    ]
-}
+# RELEASE_AUTH_TYPEHASH (constante en tu contrato)
+RELEASE_AUTH_TYPEHASH = keccak(
+    text="ReleaseAuth(bytes32 orderId,address merchant,uint256 amount,uint64 exp,bytes32 authNonce)"
+)
 
 def hash_otp(order_id: bytes, otp: str, pepper: str) -> bytes:
     """Hashes an OTP using HMAC-SHA256 for secure storage."""
@@ -45,60 +36,53 @@ def hash_qr_token(token: str, pepper: str) -> bytes:
         digestmod=hashlib.sha256
     ).digest()
 
+def sign_release_auth(order_id_hex: str, merchant_addr: str, amount_base_units: int):
+    """Genera auth struct y firma EIP-712 manual (igual que Solidity)."""
+    auth_nonce = secrets.token_bytes(32)
+    exp = int(time.time()) + settings.AUTH_TTL_SECONDS
 
-def sign_release_auth(
-    order_id_hex: str,
-    merchant_addr: str,
-    amount_base_units: int,
-) -> tuple[dict, bytes]:
-    """
-    Constructs and signs an EIP-712 ReleaseAuth message.
-    Returns the auth message and the signature.
-    """
-    auth_nonce_bytes = secrets.token_bytes(32)
-    expiration = int(time.time()) + settings.AUTH_TTL_SECONDS
+    # structHash
+    struct_hash = keccak(
+        encode(
+            ["bytes32", "bytes32", "address", "uint256", "uint64", "bytes32"],
+            [
+                RELEASE_AUTH_TYPEHASH,
+                Web3.to_bytes(hexstr=order_id_hex),
+                Web3.to_checksum_address(merchant_addr),
+                int(amount_base_units),
+                int(exp),
+                auth_nonce,
+            ]
+        )
+    )
 
-    message = {
-        "orderId": Web3.to_bytes(hexstr=order_id_hex),
+    # digest = keccak("\x19\x01" || domainSeparator || structHash)
+    digest = keccak(b"\x19\x01" + DOMAIN_SEPARATOR + struct_hash)
+
+    # firmar usando _sign_hash (web3.py v6)
+    signed = Account._sign_hash(digest, settings.AUTH_SIGNER_PRIVKEY)
+
+    # abi.encodePacked(r, s, v)
+    signature = (
+        signed.r.to_bytes(32, "big") +
+        signed.s.to_bytes(32, "big") +
+        signed.v.to_bytes(1, "big")
+    )
+
+    auth_dict = {
+        "orderId": order_id_hex,
         "merchant": Web3.to_checksum_address(merchant_addr),
         "amount": int(amount_base_units),
-        "exp": expiration,
-        "authNonce": auth_nonce_bytes,
+        "exp": exp,
+        "authNonce": "0x" + auth_nonce.hex(),
     }
 
-    # CORRECCIÓN: Se añade 'salt' a la definición del tipo EIP712Domain.
-    structured_data = {
-        "types": {
-            "EIP712Domain": [
-                {"name": "name", "type": "string"},
-                {"name": "version", "type": "string"},
-                {"name": "chainId", "type": "uint256"},
-                {"name": "verifyingContract", "type": "address"},
-                {"name": "salt", "type": "bytes32"},
-            ],
-            **TYPES,
-        },
-        "domain": DOMAIN,
-        "primaryType": "ReleaseAuth",
-        "message": message,
-    }
+    # Debug logs para comparar con Foundry
+    print("StructHash:", struct_hash.hex())
+    print("Digest:", digest.hex())
+    print("Signature:", signature.hex())
 
-    try:
-        # Usamos encode_typed_data, que es la función correcta y actualizada.
-        signable_message = encode_typed_data(full_message=structured_data)
-        private_key = settings.AUTH_SIGNER_PRIVKEY
-        signed_message = Account.sign_message(signable_message, private_key=private_key)
-        
-        # Convert bytes to hex for auth dict
-        auth_dict = message.copy()
-        auth_dict["orderId"] = "0x" + message["orderId"].hex()
-        auth_dict["authNonce"] = "0x" + message["authNonce"].hex()
-
-        return auth_dict, signed_message.signature
-
-    except Exception as e:
-        print(f"Error signing message: {e}")
-        raise
+    return auth_dict, signature
 
 def generate_otp(length: int = 6) -> str:
     """Generates a random numerical OTP."""
@@ -107,4 +91,3 @@ def generate_otp(length: int = 6) -> str:
 def generate_qr_token() -> str:
     """Generates a secure random token for QR codes."""
     return secrets.token_urlsafe(32)
-
